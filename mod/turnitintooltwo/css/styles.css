@@ -97,7 +97,6 @@
     position: relative;
     top:-3px;
     margin-right:8px;
-    line-height:
 }
 
 .peermark_instructions_spacer {
@@ -177,7 +176,7 @@
 
 td a.editable-click {
     border:none;
-    background:url(../pix/edit.png) right -4px no-repeat;
+    background:url([[pix:turnitintooltwo|edit]]) right -4px no-repeat;
     padding-right: 24px;
 }
 
@@ -186,7 +185,7 @@ td a.editable-click {
 }
 
 .score_colour {
-    background-image:url(../pix/gradback.jpg);
+    background-image:url([[pix:turnitintooltwo|gradback]]);
     width:36px;
     display:inline-block;
     float:right;
@@ -560,14 +559,14 @@ table.dataTable thead th.sorting_disabled {
 }
 
 .rubric_manager_launch, .rubric_view_launch {
-    background:url(../pix/rubric.png) no-repeat 0px 0px;
+    background:url([[pix:turnitintooltwo|rubric]]) no-repeat 0px 0px;
     padding:4px 0 4px 32px;
     line-height: 22px;
     margin-left: 6px;
 }
 
 .quickmark_manager_launch {
-    background:url(../pix/quickmark.png) no-repeat 0px 0px;
+    background:url([[pix:turnitintooltwo|quickmark]]) no-repeat 0px 0px;
     padding: 2px 0 2px 40px;
     height: 20px;
 }
@@ -583,11 +582,11 @@ table.dataTable thead th.sorting_disabled {
 }
 
 .peermark_manager_launch {
-    background:url(../pix/peermark-settings.png) no-repeat 0px 0px;
+    background:url([[pix:turnitintooltwo|peermark-settings]]) no-repeat 0px 0px;
 }
 
 .peermark_reviews_launch {
-    background:url(../pix/peermark-reviews.png) no-repeat 0px 0px;
+    background:url([[pix:turnitintooltwo|peermark-reviews]]) no-repeat 0px 0px;
 }
 
 .peermark_loading, .messages_loading {

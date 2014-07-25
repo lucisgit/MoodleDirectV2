@@ -125,13 +125,13 @@ table.dataTable tr.even td.sorting_3 { background-color: #F8F8F8; }
 	margin-left: 10px;
 }
 
-.paginate_enabled_previous { background: url('../pix/back_enabled.png') no-repeat top left; }
-.paginate_enabled_previous:hover { background: url('../pix/back_enabled_hover.png') no-repeat top left; }
-.paginate_disabled_previous { background: url('../pix/back_disabled.png') no-repeat top left; }
+.paginate_enabled_previous { background: url([[pix:turnitintooltwo|back_enabled]]) no-repeat top left; }
+.paginate_enabled_previous:hover { background: url([[pix:turnitintooltwo|back_enabled_hover]]) no-repeat top left; }
+.paginate_disabled_previous { background: url([[pix:turnitintooltwo|back_disabled]]) no-repeat top left; }
 
-.paginate_enabled_next { background: url('../pix/forward_enabled.png') no-repeat top right; }
-.paginate_enabled_next:hover { background: url('../pix/forward_enabled_hover.png') no-repeat top right; }
-.paginate_disabled_next { background: url('../pix/forward_disabled.png') no-repeat top right; }
+.paginate_enabled_next { background: url([[pix:turnitintooltwo|forward_enabled]]) no-repeat top right; }
+.paginate_enabled_next:hover { background: url([[pix:turnitintooltwo|forward_enabled_hover]]) no-repeat top right; }
+.paginate_disabled_next { background: url([[pix:turnitintooltwo|forward_disabled]]) no-repeat top right; }
 
 /* Full number pagination */
 .paging_full_numbers {
@@ -196,12 +196,12 @@ table.dataTable tr.even td.sorting_3 { background-color: #F8F8F8; }
 /*
  * Sorting
  */
-.sorting { background: url('../pix/sort_both.png') no-repeat center right; }
-.sorting_asc { background: url('../pix/sort_asc.png') no-repeat center right; }
-.sorting_desc { background: url('../pix/sort_desc.png') no-repeat center right; }
+.sorting { background: url([[pix:turnitintooltwo|sort_both]]) no-repeat center right; }
+.sorting_asc { background: url([[pix:turnitintooltwo|sort_asc]]) no-repeat center right; }
+.sorting_desc { background: url([[pix:turnitintooltwo|sort_desc]]) no-repeat center right; }
 
-.sorting_asc_disabled { background: url('../pix/sort_asc_disabled.png') no-repeat center right; }
-.sorting_desc_disabled { background: url('../pix/sort_desc_disabled.png') no-repeat center right; }
+.sorting_asc_disabled { background: url([[pix:turnitintooltwo|sort_asc_disabled]]) no-repeat center right; }
+.sorting_desc_disabled { background: url([[pix:turnitintooltwo|sort_desc_disabled]]) no-repeat center right; }
  
 table.dataTable thead th:active,
 table.dataTable thead td:active {
