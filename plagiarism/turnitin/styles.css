@@ -55,7 +55,7 @@
 }
 
 .tii_links_container .peermark_reviews_pp_launch {
-    background:url(../../../../mod/turnitintooltwo/pix/peermark-reviews.png) no-repeat 0px 0px;
+    background:url([[pix:turnitintooltwo|peermark-reviews]]) no-repeat 0px 0px;
     cursor:pointer;
     padding: 4px 0 18px 36px;
     line-height: 28px;
