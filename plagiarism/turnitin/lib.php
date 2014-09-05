@@ -402,7 +402,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                                 $ula .= html_writer::tag('span', $config->apiurl.TiiLTI::EULAENDPOINT, array('class' => 'turnitin_eula_link'));
                                 $ula .= html_writer::tag('span', '', array('class' => 'forum_eula_launch'));
                             } else {
-                                $ula = html_writer::tag('div', get_string('turnitinula', 'turnitintooltwo'),
+                                $ula = html_writer::tag('span', get_string('turnitinula', 'turnitintooltwo'),
                                                                             array('class' => 'pp_turnitin_ula'));
                                 $ula .= html_writer::tag('span', $cm->id, array('class' => 'cmid'));
 
@@ -417,7 +417,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
 
                         // Show EULA launcher and form placeholder.
                         if (!empty($ula)) {
-                            $output .= $ula.$noscriptula;
+                            $output .= html_writer::tag('div', $OUTPUT->error_text($ula.$noscriptula), array('class' => 'warning'));
 
                             $turnitincomms = new turnitintooltwo_comms();
                             $turnitincall = $turnitincomms->initialise_api();
