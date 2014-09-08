@@ -935,6 +935,11 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
 
         if ($submissiondata = $DB->get_record('plagiarism_turnitin_files', array('externalid' => $submissionid),
                                                  'id, cm, userid, similarityscore, grade, orcapable')) {
+            if ($cm->modname == 'forum') {
+                $gradescheme = $DB->get_field($cm->modname, 'scale', array('id' => $cm->instance));
+            } else {
+                $gradescheme = $DB->get_field($cm->modname, 'grade', array('id' => $cm->instance));
+            }
             $updaterequired = false;
 
             // Initialise Comms Object.
@@ -975,7 +980,8 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                 // Only update as necessary.
                 if ($updaterequired) {
                     $DB->update_record('plagiarism_turnitin_files', $plagiarismfile);
-                    if (!is_null($plagiarismfile->grade)) {
+                    // Only update grade if grading scheme is numeric.
+                    if (!is_null($plagiarismfile->grade) && $gradescheme > 0) {
                         $return = $this->update_grade($cm, $response->getSubmission(), $submissiondata->userid);
                     }
                 }
@@ -1521,6 +1527,11 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                     $currentsubmission = $DB->get_record('plagiarism_turnitin_files', array('externalid' => $tiisubmissionid),
                                                                                             'id, cm, externalid, userid');
                     if ($cm = get_coursemodule_from_id('', $currentsubmission->cm)) {
+                        if ($cm->modname == 'forum') {
+                            $gradescheme = $DB->get_field($cm->modname, 'scale', array('id' => $cm->instance));
+                        } else {
+                            $gradescheme = $DB->get_field($cm->modname, 'grade', array('id' => $cm->instance));
+                        }
 
                         $plagiarismfile = new object();
                         $plagiarismfile->id = $currentsubmission->id;
@@ -1542,7 +1553,8 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                             mtrace("File updated: ".$plagiarismfile->id);
                         }
 
-                        if (!is_null($plagiarismfile->grade)) {
+                        // Only update grade if grading scheme is numeric.
+                        if (!is_null($plagiarismfile->grade) && $gradescheme > 0) {
                             $this->update_grade($cm, $readsubmission, $currentsubmission->userid);
                         }
                     }
