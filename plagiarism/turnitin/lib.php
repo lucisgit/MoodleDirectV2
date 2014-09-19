@@ -903,7 +903,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
         if (isset($moduledata->preventlatesubmissions)) {
             $latesubmissionsallowed = ($moduledata->preventlatesubmissions == 1) ? 0 : 1;
         } else if (isset($moduledata->cutoffdate)) {
-            if ($moduledata->cutoffdate > time()) {
+            if ($moduledata->cutoffdate > time() || $moduledata->cutoffdate == 0) {
                 $latesubmissionsallowed = 1;
             } else {
                 $latesubmissionsallowed = 0;
@@ -1014,10 +1014,12 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
             if (isset($moduledata->cutoffdate)) {
                 if ($moduledata->cutoffdate > 0) {
                     $lastsubmissiondate = $moduledata->cutoffdate;
+                } else {
+                    $lastsubmissiondate = null;
                 }
             }
 
-            if ($lastsubmissiondate < time()) {
+            if ($lastsubmissiondate && $lastsubmissiondate < time()) {
                 return false;
             }
         }
