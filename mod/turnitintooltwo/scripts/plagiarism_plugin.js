@@ -136,18 +136,20 @@ jQuery(document).ready(function($) {
             dataType: "html",
             data: {action: dvtype, submission: submission_id, cmid: coursemoduleid},
             success: function(data) {
-
-                $("."+dvtype+"_form_"+submission_id).html(data);
-                $("."+dvtype+"_form_"+submission_id).children("form").on("submit", function(event) {
+                var dvform = document.createElement('div');
+                $(dvform).addClass('launch_form '+dvtype+'_form_'+submission_id);
+                $(dvform).html(data);
+                $('body').append(dvform);
+                $(dvform).children("form").on("submit", function(event) {
                     dvWindow = window.open('/', 'dv_'+submission_id);
                     dvWindow.document.write('<frameset><frame id="dvWindow" name="dvWindow"></frame></frameset>');
                     dvWindow.document.close();
                     $(dvWindow).bind('beforeunload', function() {
                         refreshScores(submission_id, coursemoduleid);
+                        $(dvform).remove();
                     });
                 });
-                $("."+dvtype+"_form_"+submission_id).children("form").submit();
-                $("."+dvtype+"_form_"+submission_id).html("");
+                $(dvform).children("form").submit();
             }
         });
     }

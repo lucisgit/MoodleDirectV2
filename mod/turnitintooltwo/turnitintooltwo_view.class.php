@@ -1062,8 +1062,6 @@ class turnitintooltwo_view {
                 $rawscore = $submission->submission_score;
             }
 
-            // Put in div placeholder for DV launch form.
-            $score .= $OUTPUT->box('', 'launch_form', 'origreport_form_'.$submission->submission_objectid);
             $score .= $OUTPUT->box_end(true);
         } else {
             $rawscore = -1;
@@ -1089,8 +1087,6 @@ class turnitintooltwo_view {
                 // Show grade.
                 $grade .= $OUTPUT->box(html_writer::tag('span', $submissiongrade, array("class" => "grade"))
                                 ."/".$parts[$partid]->maxmarks, 'grademark_grade');
-                // Put in div placeholder for DV launch form.
-                $grade .= $OUTPUT->box('', 'launch_form', 'grademark_form_'.$submission->submission_objectid);
                 $rawgrade = ($submissiongrade == "--") ? -1 : $submissiongrade;
 
             } else if (!isset($submission->submission_objectid) && empty($submission->id) && $istutor ) {
