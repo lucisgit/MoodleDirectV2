@@ -266,8 +266,12 @@ class turnitinplugin_view {
             $mform->disabledIf('plagiarism_erater_style', 'plagiarism_erater', 'eq', 0);
         }
 
-        $mform->addElement('select', 'plagiarism_anonymity', get_string("turnitinanon", "turnitintooltwo"), $options);
-        $mform->addElement('select', 'plagiarism_transmatch', get_string("transmatch", "turnitintooltwo"), $options);
+        if ($config->useanon) {
+            $mform->addElement('select', 'plagiarism_anonymity', get_string("turnitinanon", "turnitintooltwo"), $options);
+        }
+        if ($config->transmatch) {
+            $mform->addElement('select', 'plagiarism_transmatch', get_string("transmatch", "turnitintooltwo"), $options);
+        }
         $mform->addElement('hidden', 'action', "defaults");
         $mform->setType('action', PARAM_RAW);
 
