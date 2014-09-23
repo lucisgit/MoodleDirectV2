@@ -674,7 +674,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
      * Update module grade and gradebook.
      */
     private function update_grade($cm, $submission, $userid, $type = 'submission') {
-        global $DB, $USER;
+        global $DB, $USER, $CFG;
         $return = true;
         $grade = $submission->getGrade();
 
@@ -749,6 +749,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
 
             // Gradebook object.
             if ($grade) {
+                require_once($CFG->libdir . '/gradelib.php');
                 $grades = new stdClass();
                 $grades->userid = $userid;
                 $grades->rawgrade = $grade->grade;
