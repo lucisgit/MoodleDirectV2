@@ -99,7 +99,11 @@ jQuery(document).ready(function($) {
 
                 $(window).on("message", function(ev) {
                     if (ev.originalEvent.data == 'turnitin_eula_accepted') {
-                        window.location = window.location;
+                        if (window.location.search === "") {
+                            $('form.mform').submit();
+                        } else {
+                            $('div.warning').hide();
+                        }
                     }
                 });
             }
