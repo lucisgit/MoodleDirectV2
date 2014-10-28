@@ -795,12 +795,24 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                 $plagiarismfile = current($plagiarismfiles);
 
                 // Get user's grades.
+                // Get start date
+                if (!empty($moduledata->allowsubmissionsfromdate)) {
+                    $startdate = $moduledata->allowsubmissionsfromdate;
+                } else if (!empty($moduledata->timeavailable)) {
+                    $startdate = $moduledata->timeavailable;
+                } else {
+                    $startdate = $cm->added;
+                }
+                $startdate = ($startdate <= strtotime('-1 year')) ? strtotime('-11 months') : $startdate;
                 // Get Due date
                 $duedate = 0;
                 if (!empty($moduledata->duedate)) {
                     $duedate = $moduledata->duedate;
                 } else if (!empty($moduledata->timedue)) {
                     $duedate = $moduledata->timedue;
+                }
+                if ($duedate <= $startdate) {
+                    $duedate = strtotime('+1 month', $startdate);
                 }
                 // Get post date
                 $postdate = 0;
@@ -818,8 +830,8 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                                 $postdate = strtotime('+1 month');
                                 break;
                             case 0:
-                                $postdate = time();
-                                if ($CFG->branch >= 26 && $cm->modname == 'assign' && !empty($moduledata->markingworkflow)) {
+                                $postdate = strtotime('+4 weeks', $duedate);
+                                if ($CFG->branch >= 26 && $cm->modname == 'assign') {
                                     $gradesreleased = $DB->record_exists(
                                                                 'assign_user_flags',
                                                                 array(
@@ -829,6 +841,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                                                                 ));
 
                                     $postdate = ($gradesreleased) ? time() : strtotime('+4 weeks', $duedate);
+                                    $earlyrelease = ($gradesreleased) ? true : false;
                                 }
                                 break;
                             default:
@@ -926,11 +939,11 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                         }
 
                         // Can grade and feedback be released to this student yet?
-                        $released = ($postdate <= time() && (!is_null($plagiarismfile->grade) || isset($currentgradequery->grade)));
+                        $released = (!empty($earlyrelease) || ($postdate <= time() &&
+                                (!is_null($plagiarismfile->grade) || isset($currentgradequery->grade))));
 
                         // Show link to open grademark.
-                        if ($config->usegrademark && ($istutor || ($linkarray["userid"] == $USER->id && $released))
-                                 && !empty($gradeitem)) {
+                        if ($config->usegrademark && ($istutor || ($linkarray["userid"] == $USER->id && $released))) {
 
                             // Output grademark icon.
                             $output .= $OUTPUT->box_start('grade_icon', '');
@@ -1558,6 +1571,10 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
         } else if (!empty($moduledata->timedue)) {
             $dtdue = $moduledata->timedue;
         }
+        // Ensure due date can't be before start date
+        if ($dtdue <= $dtstart) {
+            $dtdue = strtotime('+1 month', $dtstart);
+        }
 
         // If the due date has been set more than a year ahead then restrict the
         // due date in Turnitin to 1 year from now.
@@ -1567,26 +1584,26 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
         }
 
         // Set post date. If "hidden until" has been set in gradebook then we will use that value, otherwise we will
-        // use start date. If the grades are to be completely hidden then we will set post date in the future.
-        // From 2.6, if grading markflow is enabled and no grades have been released, we will use due date +4 weeks.
+        // use due date + 4 weeks. If the grades are to be completely hidden then we will set post date in the future.
         $dtpost = 0;
         if ($cm->modname != "forum") {
             if ($gradeitem = $DB->get_record(
                                             'grade_items',
                                             array(
                                                 'iteminstance' => $cm->instance, 
-                                                'itemmodule' => $cm->modname, 
+                                                'itemmodule' => $cm->modname,
+                                                'itemnumber' => 0,
                                                 'courseid' => $cm->course)
                                             )) {
 
                 switch ($gradeitem->hidden) {
                     case 1:
-                        $dtpost = strtotime('+6 months');
+                        $dtpost = strtotime('+1 month');
                         break;
                     case 0:
-                        $dtpost = $dtstart;
+                        $dtpost = strtotime('+4 weeks', $dtdue);
                         // If any grades have been released early via marking workflow, set post date to current time.
-                        if ($CFG->branch >= 26 && $cm->modname == 'assign' && !empty($moduledata->markingworkflow)) {
+                        if ($CFG->branch >= 26 && $cm->modname == 'assign') {
                             $gradesreleased = $DB->record_exists('assign_user_flags',
                                                             array('assignment' => $cm->instance,
                                                                     'workflowstate' => 'released'));
@@ -1607,10 +1624,10 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
         if (!empty($moduledata->cutoffdate)) {
             $dtdue = $moduledata->cutoffdate;
         }
-        // Ensure due date can't be before start date
-        if ($dtdue <= $dtstart) {
-            $dtdue = strtotime('+1 month', $dtstart);
-        }
+        // If the module has no due date or is a forum, or the due date has passed,
+        // we make the due date one day from now in Turnitin so that we can submit past the due date.
+        $dtdue = ($dtdue <= time()) ? strtotime('+1 day') : $dtdue;
+
         // Ensure post date can't be before start date
         if ($dtpost < $dtstart) {
             $dtpost = $dtstart;
@@ -1770,7 +1787,6 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                     }
 
                     // Only update modules that haven't started yet.
-                    $dtstart = 0;
                     if (!empty($moduledata->allowsubmissionsfromdate)) {
                         $dtstart = $moduledata->allowsubmissionsfromdate;
                     } else if (!empty($moduledata->timeavailable)) {
@@ -1778,6 +1794,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                     } else {
                         $dtstart = $cm->added;
                     }
+                    $dtstart = ($dtstart <= strtotime('-1 year')) ? strtotime('-11 months') : $dtstart;
                     if ($dtstart > time()) {
                         continue;
                     }
@@ -1785,13 +1802,21 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                     if ($plagiarism_post_date = $DB->get_record_select('plagiarism_turnitin_config',
                                                 " name = ? AND cm = ? ", array('plagiarism_post_date', $cm->id), 'value')) {
 
+                        $dtdue = 0;
+                        if (!empty($moduledata->duedate)) {
+                            $dtdue = $moduledata->duedate;
+                        } else if (!empty($moduledata->timedue)) {
+                            $dtdue = $moduledata->timedue;
+                        }
+                        if ($dtdue <= $dtstart) {
+                            $dtdue = strtotime('+1 month', $dtstart);
+                        }
+
                         $post_date = $plagiarism_post_date->value;
                         if ($gradeitem = $DB->get_record('grade_items', array('iteminstance' => $cm->instance,
                                                         'itemmodule' => $cm->modname, 'itemnumber' => 0, 'courseid' => $cm->course))) {
-                            // 1 means grade is always hidden, 0 means it's never hidden so we make it the same as start date.
-                            // Otherwise there is a hidden until date which we use as the post date.
-                            // From 2.6, if grading markflow is enabled and no grades have been released, 
-                            // we will use due date +4 weeks.
+                            // 1 means grade is always hidden, 0 means it's never hidden so we set the post date to 4 weeks
+                            // after the due date. Otherwise there is a hidden until date which we use as the post date.
                             switch ($gradeitem->hidden) {
                                 case 1:
                                     // If Turnitin post date is in the next 7 days then push it ahead
@@ -1814,18 +1839,12 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                                                 $this->sync_tii_assignment($cm, $coursedata->turnitin_cid, "cron");
                                             }
                                         } else {
-                                            $dtdue = 0;
-                                            if (!empty($moduledata->duedate)) {
-                                                $dtdue = $moduledata->duedate;
-                                            } else if (!empty($moduledata->timedue)) {
-                                                $dtdue = $moduledata->timedue;
-                                            }
                                             if ($post_date != strtotime('+4 weeks', $dtdue)) {
                                                 $this->sync_tii_assignment($cm, $coursedata->turnitin_cid, "cron");
                                             }
                                         }
                                     } else {
-                                        if ($post_date > time()) {
+                                        if ($post_date != strtotime('+4 weeks', $dtdue)) {
                                             $this->sync_tii_assignment($cm, $coursedata->turnitin_cid, "cron");
                                         }
                                     }
