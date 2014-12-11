@@ -1440,6 +1440,10 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
         foreach ($submissiontypes as $submissiontype) {
             $this->cron_update_scores($submissiontype);
         }
+
+        mtrace('Reducing maximum submission size to 20 MB for Turnitin-enabled file upload assignments...');
+        mtrace('... ' . $this->cron_update_max_file_size() . ' assignments updated.');
+
         return true;
     }
 
@@ -1623,6 +1627,57 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
         }
 
         return true;
+    }
+
+    /**
+     * Reduce maximum submission size to 20 MB for Turnitin-enabled file upload assignments.
+     *
+     * @return int Number of assignments updated
+     */
+    private function cron_update_max_file_size() {
+        global $DB;
+
+        $updated = 0;
+
+        $selectsql = "SELECT apc.id
+                        FROM {assign_plugin_config} apc
+                        JOIN {assign} a ON a.id = apc.assignment
+                        JOIN {course_modules} cm ON cm.instance = a.id
+                        JOIN {modules} m ON m.id = cm.module
+                         AND m.name = ?
+                        JOIN {plagiarism_turnitin_config} ptc ON ptc.cm = cm.id
+                         AND ptc.name = ?
+                         AND ptc.value = ?
+                       WHERE apc.plugin = ?
+                         AND apc.subtype = ?
+                         AND apc.name = ?
+                         AND (CAST(apc.value AS int) > ?
+                          OR apc.value = ?)";
+
+        $selectparams = array(
+            'assign',
+            'use_turnitin',
+            '1',
+            'file',
+            'assignsubmission',
+            'maxsubmissionsizebytes',
+            20971520,
+            '0');
+
+        $updatesql = "UPDATE {assign_plugin_config}
+                         SET value = ?";
+
+        $updateparams = array('20971520');
+
+        if ($assignments = $DB->get_fieldset_sql($selectsql, $selectparams)) {
+            foreach ($assignments as $assignment) {
+                if ($DB->execute($updatesql . " WHERE id = $assignment", $updateparams)) {
+                    $updated++;
+                }
+            }
+        }
+
+        return $updated;
     }
 
     /**
