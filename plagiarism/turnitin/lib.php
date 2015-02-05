@@ -1109,7 +1109,17 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
             if ($grade) {
                 $grades = new stdClass();
                 $grades->userid = $userid;
-                $grades->rawgrade = $grade->grade;
+
+                // Check marking workflow state for assignments and only update gradebook if released.
+                if ($cm->modname == 'assign' && !$DB->record_exists('assign_user_flags',
+                        array('userid' => $userid,
+                            'assignment' => $cm->instance,
+                            'workflowstate' => 'released'))) {
+                    // Remove any existing grade from gradebook if not released.
+                    $grades->rawgrade = null;
+                } else {
+                    $grades->rawgrade = $grade->grade;
+                }
                 $params['idnumber'] = $cm->idnumber;
 
                 // Update gradebook - Grade update returns 1 on failure and 0 if successful.
