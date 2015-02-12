@@ -961,7 +961,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
 
     public function update_grade_from_tii($cm, $submissionid) {
         global $DB;
-        $return = true;
+        $return = false;
 
         if ($submissiondata = $DB->get_record('plagiarism_turnitin_files', array('externalid' => $submissionid),
                                                  'id, cm, userid, similarityscore, grade, orcapable')) {
@@ -969,7 +969,52 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                 $gradescheme = $DB->get_field($cm->modname, 'scale', array('id' => $cm->instance));
             } else {
                 $gradescheme = $DB->get_field($cm->modname, 'grade', array('id' => $cm->instance));
+
+                // Get module grade.
+                if ($cm->modname == 'assign') {
+                    $sql = "SELECT grade
+                              FROM {assign_grades}
+                             WHERE assignment = :assignment
+                               AND userid = :userid
+                          ORDER BY id DESC";
+                    $params = array(
+                        'assignment' => $cm->instance,
+                        'userid'     => $submissiondata->userid
+                    );
+                    $modgrade = $DB->get_field_sql($sql, $params, IGNORE_MULTIPLE);
+                } else if ($cm->modname == 'workshop') {
+                    $sql = "SELECT gg.rawgrade
+                              FROM {grade_grades} gg
+                              JOIN {grade_items} gi ON gi.id = gg.itemid
+                               AND gi.iteminstance = :instance
+                               AND gi.itemmodule = :module
+                               AND gi.itemnumber = :number
+                             WHERE gg.userid = :userid";
+                    $params = array(
+                        'instance' => $cm->instance,
+                        'module'   => $cm->modname,
+                        'number'   => 0,
+                        'userid'   => $submissiondata->userid
+                    );
+                    $modgrade = $DB->get_field_sql($sql, $params);
+                }
+                // Check for any other submissions contributing to module grade.
+                $select = "cm = :cmid AND userid = :userid AND externalid <> :externalid AND grade IS NOT NULL";
+                $params = array(
+                    'cmid'       => $cm->id,
+                    'userid'     => $submissiondata->userid,
+                    'externalid' => $submissionid
+                );
+                if ($submissions = $DB->get_records_select('plagiarism_turnitin_files', $select, $params, '', 'grade')) {
+                    // Work out what this submission's module grade contribution should be.
+                    $totalgrade = (count($submissions) + 1) * $modgrade;
+                    foreach ($submissions as $submission) {
+                        $totalgrade = $totalgrade - $submission->grade;
+                    }
+                    $modgrade = round($totalgrade);
+                }
             }
+
             $updaterequired = false;
 
             // Initialise Comms Object.
@@ -1001,7 +1046,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                 if (!is_null($plagiarismfile->similarityscore) || !is_null($plagiarismfile->grade) || 
                         !is_null($plagiarismfile->orcapable)) {
                     if ($submissiondata->similarityscore != $plagiarismfile->similarityscore ||
-                            $submissiondata->grade != $plagiarismfile->grade || 
+                            $submissiondata->grade != $plagiarismfile->grade || $modgrade != $plagiarismfile->grade ||
                             $submissiondata->orcapable != $plagiarismfile->orcapable) {
                         $updaterequired = true;
                     }
@@ -1030,7 +1075,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
      */
     private function update_grade($cm, $submission, $userid, $type = 'submission') {
         global $DB, $USER, $CFG;
-        $return = true;
+        $return = false;
         $grade = $submission->getGrade();
 
         if (!is_null($grade) && $cm->modname != 'forum') {
@@ -1062,7 +1107,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                         $gradescounted += 1;
                     }
                 }
-                $grade->grade = (!is_null($averagegrade) && $gradescounted > 0) ? (int)($averagegrade / $gradescounted) : null;
+                $grade->grade = (!is_null($averagegrade) && $gradescounted > 0) ? ($averagegrade / $gradescounted) : null;
             } else {
                 $grade->grade = $submission->getGrade();
             }
@@ -1123,8 +1168,8 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                 $params['idnumber'] = $cm->idnumber;
 
                 // Update gradebook - Grade update returns 1 on failure and 0 if successful.
-                if (grade_update('mod/'.$cm->modname, $cm->course, 'mod', $cm->modname, $cm->instance, 0, $grades, $params)) {
-                    $return = false;
+                if (grade_update('mod/'.$cm->modname, $cm->course, 'mod', $cm->modname, $cm->instance, 0, $grades, $params) == 0) {
+                    $return = true;
                 }
             }
         }
@@ -1463,6 +1508,7 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
     public function cron_update_assignments() {
         global $DB;
 
+        $time = time();
         $assignments = $DB->get_records_select('plagiarism_turnitin_config',
                                         " name = ? ", array('turnitin_assignid'), 'cm, value');
 
@@ -1549,6 +1595,19 @@ class plagiarism_plugin_turnitin extends plagiarism_plugin {
                                     $this->sync_tii_assignment($cm, $coursedata->turnitin_cid, "cron");
                                 }
                                 break;
+                        }
+
+                        // Update assignment grades from Turnitin where necessary. Run at midnight only.
+                        if ($dtdue < $time && $post_date > $time && date('H', $time) == '00' && date('i', $time) == '00' &&
+                                $DB->get_field($cm->modname, 'grade', array('id' => $cm->instance)) > 0) {
+                            $select = "cm = :cmid AND externalid IS NOT NULL";
+                            $params = array('cmid' => $cm->id);
+                            $submissions = $DB->get_fieldset_select('plagiarism_turnitin_files', 'externalid', $select, $params);
+                            foreach ($submissions as $submission) {
+                                if ($this->update_grade_from_tii($cm, $submission)) {
+                                    mtrace('Grade updated from TII for submission with Turnitin ID ' . $submission->externalid);
+                                }
+                            }
                         }
                     } else {
                         $this->sync_tii_assignment($cm, $coursedata->turnitin_cid, "cron");
